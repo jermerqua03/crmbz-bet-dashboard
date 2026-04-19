@@ -1,0 +1,100 @@
+{
+  "currentBankroll": 1000,
+  "startingBankroll": 1000,
+  "netProfit": 0,
+  "roi": 0,
+  "wins": 0,
+  "losses": 0,
+  "winRate": 0,
+  "daysRemaining": 13,
+  "bankrollHistory": [
+    { "date": "2026-04-18", "bankroll": 1000 },
+    { "date": "2026-04-19", "bankroll": 1000 }
+  ],
+  "strategies": [
+    { "strategy": "High Probability", "bets": 2, "winRate": 0, "wagered": 40, "pnl": 0, "roi": 0 },
+    { "strategy": "Value Hunting", "bets": 1, "winRate": 0, "wagered": 20, "pnl": 0, "roi": 0 }
+  ],
+  "todaysBets": [
+    {
+      "id": "101",
+      "date": "2026-04-19",
+      "sport": "NBA",
+      "description": "Jokic Over 10.5 Reb",
+      "odds": "-150",
+      "stake": 20,
+      "trueProb": 0.84,
+      "edge": 12,
+      "result": "PENDING",
+      "pnl": 0,
+      "strategy": "High Probability"
+    },
+    {
+      "id": "102",
+      "date": "2026-04-19",
+      "sport": "NBA",
+      "description": "Nuggets WIN",
+      "odds": "-240",
+      "stake": 20,
+      "trueProb": 0.85,
+      "edge": 14,
+      "result": "PENDING",
+      "pnl": 0,
+      "strategy": "High Probability"
+    },
+    {
+      "id": "103",
+      "date": "2026-04-19",
+      "sport": "MLB",
+      "description": "Mets ML",
+      "odds": "+112",
+      "stake": 20,
+      "trueProb": 0.74,
+      "edge": 22,
+      "result": "PENDING",
+      "pnl": 0,
+      "strategy": "Value Hunting"
+    }
+  ],
+  "bets": [
+    {
+      "id": "101",
+      "date": "2026-04-19",
+      "sport": "NBA",
+      "description": "Jokic Over 10.5 Reb",
+      "odds": "-150",
+      "stake": 20,
+      "trueProb": 0.84,
+      "edge": 12,
+      "result": "PENDING",
+      "pnl": 0,
+      "strategy": "High Probability"
+    },
+    {
+      "id": "102",
+      "date": "2026-04-19",
+      "sport": "NBA",
+      "description": "Nuggets WIN",
+      "odds": "-240",
+      "stake": 20,
+      "trueProb": 0.85,
+      "edge": 14,
+      "result": "PENDING",
+      "pnl": 0,
+      "strategy": "High Probability"
+    },
+    {
+      "id": "103",
+      "date": "2026-04-19",
+      "sport": "MLB",
+      "description": "Mets ML",
+      "odds": "+112",
+      "stake": 20,
+      "trueProb": 0.74,
+      "edge": 22,
+      "result": "PENDING",
+      "pnl": 0,
+      "strategy": "Value Hunting"
+    }
+  ]
+}
