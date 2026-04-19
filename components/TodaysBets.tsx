@@ -69,16 +69,9 @@ export default function TodaysBets({ bets }: { bets: Bet[] }) {
         <h2 className="text-[10px] font-bold tracking-[0.3em] uppercase text-[#4b5563]">
           Today&apos;s Bets
         </h2>
-        <div className="flex items-center gap-3">
-          {liveGames.some(g => g.status === 'in') && (
-            <span className="text-[9px] text-red-400 font-bold tracking-widest animate-pulse">
-              ● LIVE UPDATES
-            </span>
-          )}
-          <span className="text-[10px] text-[#334155] tabular-nums">
-            {todayBets.length} bet{todayBets.length !== 1 ? 's' : ''}
-          </span>
-        </div>
+        <span className="text-[10px] text-[#334155] tabular-nums">
+          {todayBets.length} bet{todayBets.length !== 1 ? 's' : ''}
+        </span>
       </div>
 
       {todayBets.length === 0 ? (
@@ -86,17 +79,22 @@ export default function TodaysBets({ bets }: { bets: Bet[] }) {
       ) : (
         <div className="space-y-3">
           {todayBets.map((bet) => {
-            const { game, playerStat } = bet.result === 'PENDING'
-              ? matchBetToGame(bet.description, liveGames)
-              : { game: null, playerStat: null }
+            const { game, playerStat, resolvedResult, resolvedPnl } = bet.result === 'PENDING'
+              ? matchBetToGame(bet.description, liveGames, bet.stake, bet.odds)
+              : { game: null, playerStat: null, resolvedResult: null, resolvedPnl: null }
+
+            // Use resolved data when game is FINAL, otherwise fall back to JSON
+            const displayResult = resolvedResult ?? bet.result
+            const displayPnl = resolvedPnl ?? bet.pnl
+            const isFinalResolved = !!resolvedResult
 
             return (
               <div
                 key={bet.id}
                 className={`rounded-lg border px-3 py-3 ${
-                  bet.result === 'WIN'
+                  displayResult === 'WIN'
                     ? 'border-green-900/40 bg-green-950/10'
-                    : bet.result === 'LOSS'
+                    : displayResult === 'LOSS'
                     ? 'border-red-900/40 bg-red-950/10'
                     : game?.status === 'in'
                     ? 'border-red-900/30 bg-[#0f0a0a]'
@@ -112,8 +110,9 @@ export default function TodaysBets({ bets }: { bets: Bet[] }) {
                     <span className="text-slate-200 text-xs leading-snug">{bet.description}</span>
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
-                    <ResultBadge result={bet.result} />
-                    <PnlCell result={bet.result} pnl={bet.pnl} />
+                    <ResultBadge result={displayResult} />
+                    {isFinalResolved && <span className="text-[9px] text-gray-600">via ESPN</span>}
+                    <PnlCell result={displayResult} pnl={displayPnl} />
                   </div>
                 </div>
 

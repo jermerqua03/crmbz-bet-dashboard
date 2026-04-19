@@ -105,9 +105,12 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
           <tbody>
             {filtered.map((bet, i) => {
               const isToday = bet.date === today
-              const { game, playerStat } = (bet.result === 'PENDING' && isToday)
-                ? matchBetToGame(bet.description, liveGames)
-                : { game: null, playerStat: null }
+              const { game, playerStat, resolvedResult, resolvedPnl } = (bet.result === 'PENDING' && isToday)
+                ? matchBetToGame(bet.description, liveGames, bet.stake, bet.odds)
+                : { game: null, playerStat: null, resolvedResult: null, resolvedPnl: null }
+
+              const displayResult = resolvedResult ?? bet.result
+              const displayPnl = resolvedPnl ?? bet.pnl
               const isLive = game?.status === 'in'
 
               return (
@@ -130,12 +133,12 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
                     {bet.edge >= 0 ? '+' : ''}{bet.edge.toFixed(1)}%
                   </td>
                   <td className="px-3 py-2">
-                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${RESULT_COLORS[bet.result]}`}>
-                      {bet.result}
+                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${RESULT_COLORS[displayResult]}`}>
+                      {displayResult}
                     </span>
                   </td>
-                  <td className={`px-3 py-2 font-bold ${bet.pnl > 0 ? 'text-green-400' : bet.pnl < 0 ? 'text-red-400' : 'text-gray-400'}`}>
-                    {bet.pnl > 0 ? '+' : ''}{bet.pnl !== 0 ? `$${bet.pnl.toFixed(2)}` : '—'}
+                  <td className={`px-3 py-2 font-bold ${displayPnl > 0 ? 'text-green-400' : displayPnl < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                    {displayPnl > 0 ? '+' : ''}{displayPnl !== 0 ? `$${Math.abs(displayPnl).toFixed(2)}` : '—'}
                   </td>
                   <td className="px-3 py-2 text-gray-400">{bet.strategy}</td>
                 </tr>

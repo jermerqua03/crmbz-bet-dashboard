@@ -36,10 +36,19 @@ export interface LiveMatchResult {
     direction: 'over' | 'under'
     pace: 'hitting' | 'missing' | 'unknown'
   } | null
+  // Non-null only when game.status === 'post' — auto-resolved from ESPN data
+  resolvedResult: 'WIN' | 'LOSS' | null
+  resolvedPnl: number | null
 }
 
-export function matchBetToGame(description: string, games: ESPNGame[]): LiveMatchResult {
-  if (!games.length) return { game: null, playerStat: null }
+export function matchBetToGame(
+  description: string,
+  games: ESPNGame[],
+  stake?: number,
+  oddsStr?: string,
+): LiveMatchResult {
+  const empty: LiveMatchResult = { game: null, playerStat: null, resolvedResult: null, resolvedPnl: null }
+  if (!games.length) return empty
 
   // Try player prop match first (more specific)
   const propParse = parsePropBet(description)
@@ -50,23 +59,73 @@ export function matchBetToGame(description: string, games: ESPNGame[]): LiveMatc
       if (player) {
         const rawVal = player.stats[statKey] ?? player.stats[statKey.toLowerCase()]
         const current = rawVal ? parseFloat(rawVal) : NaN
+        const pace = isNaN(current) ? 'unknown' as const
+          : direction === 'over'
+            ? (current >= target ? 'hitting' as const : 'missing' as const)
+            : (current <= target ? 'hitting' as const : 'missing' as const)
+
+        let resolvedResult: 'WIN' | 'LOSS' | null = null
+        let resolvedPnl: number | null = null
+        if (game.status === 'post' && pace !== 'unknown') {
+          resolvedResult = pace === 'hitting' ? 'WIN' : 'LOSS'
+          if (stake != null && oddsStr != null) resolvedPnl = calcPnl(resolvedResult, stake, oddsStr)
+        }
+
         return {
           game,
-          playerStat: isNaN(current) ? null : {
-            label: statLabel,
-            current,
-            target,
-            direction,
-            pace: direction === 'over' ? (current >= target ? 'hitting' : 'missing') : (current <= target ? 'hitting' : 'missing'),
-          },
+          playerStat: isNaN(current) ? null : { label: statLabel, current, target, direction, pace },
+          resolvedResult,
+          resolvedPnl,
         }
       }
     }
   }
 
-  // Fall back to team name match (for ML, spread, game-winner bets)
+  // Fall back to team name match (ML, spread, game-winner)
   const teamGame = findGameByTeam(description, games)
-  return { game: teamGame, playerStat: null }
+  if (!teamGame) return empty
+
+  let resolvedResult: 'WIN' | 'LOSS' | null = null
+  let resolvedPnl: number | null = null
+  if (teamGame.status === 'post') {
+    resolvedResult = resolveTeamOutcome(description, teamGame)
+    if (resolvedResult && stake != null && oddsStr != null) {
+      resolvedPnl = calcPnl(resolvedResult, stake, oddsStr)
+    }
+  }
+
+  return { game: teamGame, playerStat: null, resolvedResult, resolvedPnl }
+}
+
+// ─── helpers ─────────────────────────────────────────────────────────────────
+
+function resolveTeamOutcome(description: string, game: ESPNGame): 'WIN' | 'LOSS' | null {
+  const words = description
+    .split(/\s+/)
+    .map(w => w.replace(/[^a-zA-Z]/g, '').toLowerCase())
+    .filter(w => w.length > 2 && !SKIP_WORDS.has(w))
+
+  const homeTokens = [...game.homeTeam.toLowerCase().split(/\s+/), game.homeAbbr.toLowerCase()]
+  const awayTokens = [...game.awayTeam.toLowerCase().split(/\s+/), game.awayAbbr.toLowerCase()]
+
+  let betSide: 'home' | 'away' | null = null
+  for (const word of words) {
+    if (homeTokens.some(t => t === word || t.startsWith(word) || word.startsWith(t))) { betSide = 'home'; break }
+    if (awayTokens.some(t => t === word || t.startsWith(word) || word.startsWith(t))) { betSide = 'away'; break }
+  }
+
+  if (!betSide) return null
+  const won = betSide === 'home'
+    ? game.homeScore > game.awayScore
+    : game.awayScore > game.homeScore
+  return won ? 'WIN' : 'LOSS'
+}
+
+function calcPnl(result: 'WIN' | 'LOSS', stake: number, oddsStr: string): number {
+  if (result === 'LOSS') return -stake
+  const odds = parseFloat(oddsStr.replace('+', ''))
+  if (odds >= 0) return parseFloat((stake * (odds / 100)).toFixed(2))
+  return parseFloat((stake * (100 / Math.abs(odds))).toFixed(2))
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────────────

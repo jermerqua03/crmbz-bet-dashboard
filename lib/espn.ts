@@ -73,7 +73,8 @@ async function fetchScoreboard(sport: string): Promise<ESPNGame[]> {
       playerStats: [],
     }
 
-    if (state === 'in') {
+    // Fetch box scores for live AND finished games (needed for prop resolution)
+    if (state === 'in' || state === 'post') {
       game.playerStats = await fetchBoxScoreStats(path, event.id).catch(() => [])
     }
 
