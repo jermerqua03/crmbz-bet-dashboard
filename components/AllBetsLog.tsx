@@ -60,6 +60,9 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
         </div>
       </div>
       <div className="overflow-x-auto">
+        {filtered.length === 0 ? (
+          <div className="text-center py-8 text-gray-600">No bets yet. Start your first simulation to see results here!</div>
+        ) : (
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-gray-800">
@@ -93,8 +96,6 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
             ))}
           </tbody>
         </table>
-        {filtered.length === 0 && (
-          <div className="text-center py-8 text-gray-600">No bets match filters</div>
         )}
       </div>
     </div>
