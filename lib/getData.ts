@@ -1,9 +1,14 @@
-// Always loads dashboard data by HTTP fetch (for both client and server, Vercel-compatible).
+// Loads dashboard data both client and server (always works on Vercel and locally)
 const PROD_URL = 'https://crmbz-bet-dashboard.vercel.app/dashboard-data.json';
 
 export async function getData() {
   let url = PROD_URL;
-  if (typeof window !== 'undefined') url = '/dashboard-data.json';
+  // Use environment variable if available (Vercel server), else fallback
+  if (typeof window !== 'undefined') {
+    url = '/dashboard-data.json'
+  } else if (process.env.VERCEL_URL) {
+    url = `https://${process.env.VERCEL_URL}/dashboard-data.json`
+  }
   try {
     const res = await fetch(url, { cache: 'no-store' });
     return await res.json();
