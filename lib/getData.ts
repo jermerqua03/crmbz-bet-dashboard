@@ -18,7 +18,8 @@ const EMPTY_DATA: DashboardData = {
 
 export async function getData(): Promise<DashboardData> {
   try {
-    const raw = fs.readFileSync('/Users/jermerqua02/.openclaw/workspace/gamble-sim/dashboard-data.json', 'utf8')
+    // Corrected: Use relative project path (works in Vercel build environment)
+    const raw = fs.readFileSync('gamble-sim/dashboard-data.json', 'utf8')
     const data = JSON.parse(raw)
     // Only show data from April 18 onward
     data.bets = (data.bets || []).filter((b:any) => new Date(b.date) >= new Date('2026-04-18'))
