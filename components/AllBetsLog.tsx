@@ -1,6 +1,9 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Bet } from '../types'
+import { ESPNGame } from '../lib/espn'
+import { matchBetToGame } from '../lib/matchBet'
+import LiveGameInfo from './LiveGameInfo'
 
 const RESULT_COLORS = {
   WIN: 'text-green-400 bg-green-400/10',
@@ -15,11 +18,39 @@ const SPORT_COLORS: Record<string, string> = {
   NFL: 'text-yellow-400',
 }
 
+function useLiveGames(sports: string[]) {
+  const [games, setGames] = useState<ESPNGame[]>([])
+  const sportsKey = sports.join(',')
+  const keyRef = useRef(sportsKey)
+  keyRef.current = sportsKey
+
+  useEffect(() => {
+    if (!keyRef.current) return
+    const fetch_ = async () => {
+      try {
+        const res = await fetch(`/api/live-games?sports=${keyRef.current}`)
+        if (res.ok) setGames(await res.json())
+      } catch { /* ignore */ }
+    }
+    fetch_()
+    const id = setInterval(fetch_, 30_000)
+    return () => clearInterval(id)
+  }, [sportsKey])
+
+  return games
+}
+
 export default function AllBetsLog({ bets }: { bets: Bet[] }) {
   const [sportFilter, setSportFilter] = useState('ALL')
   const [resultFilter, setResultFilter] = useState('ALL')
   const [strategyFilter, setStrategyFilter] = useState('ALL')
   const [detailBet, setDetailBet] = useState<Bet | null>(null)
+
+  const today = new Date().toISOString().slice(0, 10)
+  const todayPendingSports = Array.from(new Set(
+    bets.filter(b => b.result === 'PENDING' && b.date === today).map(b => b.sport)
+  ))
+  const liveGames = useLiveGames(todayPendingSports)
 
   const sports = ['ALL', ...Array.from(new Set(bets.map(b => b.sport)))]
   const strategies = ['ALL', ...Array.from(new Set(bets.map(b => b.strategy)))]
@@ -30,13 +61,6 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
     if (strategyFilter !== 'ALL' && b.strategy !== strategyFilter) return false
     return true
   })
-
-  function liveStatus(bet: Bet) {
-    const today = new Date().toISOString().slice(0,10)
-    return bet.result === 'PENDING' && bet.date === today
-      ? <span className="ml-2 px-2 py-0.5 text-xs rounded bg-blue-600 text-white animate-pulse">LIVE</span>
-      : null
-  }
 
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
@@ -79,32 +103,44 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((bet, i) => (
-              <tr key={bet.id}
-                className={`border-b border-gray-800/50 hover:bg-gray-800/30 ${i % 2 === 0 ? '' : 'bg-gray-900/50'} cursor-pointer`}
-                onClick={() => setDetailBet(bet)}
-              >
-                <td className="px-3 py-2 text-gray-400">{bet.date}</td>
-                <td className={`px-3 py-2 font-medium ${SPORT_COLORS[bet.sport] || 'text-gray-300'}`}>{bet.sport}</td>
-                <td className="px-3 py-2 text-gray-200 max-w-[200px] truncate">{bet.description}</td>
-                <td className="px-3 py-2 text-gray-300">{bet.odds}</td>
-                <td className="px-3 py-2 text-gray-300">${bet.stake}</td>
-                <td className="px-3 py-2 text-gray-300">{(bet.trueProb * 100).toFixed(0)}%</td>
-                <td className={`px-3 py-2 font-medium ${bet.edge >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {bet.edge >= 0 ? '+' : ''}{bet.edge.toFixed(1)}%
-                </td>
-                <td className="px-3 py-2">
-                  <span className={`px-2 py-0.5 rounded text-xs font-bold ${RESULT_COLORS[bet.result]}`}>
-                    {bet.result}
-                  </span>
-                  {liveStatus(bet)}
-                </td>
-                <td className={`px-3 py-2 font-bold ${bet.pnl > 0 ? 'text-green-400' : bet.pnl < 0 ? 'text-red-400' : 'text-gray-400'}`}>
-                  {bet.pnl > 0 ? '+' : ''}{bet.pnl !== 0 ? `$${bet.pnl.toFixed(2)}` : '—'}
-                </td>
-                <td className="px-3 py-2 text-gray-400">{bet.strategy}</td>
-              </tr>
-            ))}
+            {filtered.map((bet, i) => {
+              const isToday = bet.date === today
+              const { game, playerStat } = (bet.result === 'PENDING' && isToday)
+                ? matchBetToGame(bet.description, liveGames)
+                : { game: null, playerStat: null }
+              const isLive = game?.status === 'in'
+
+              return (
+                <tr key={bet.id}
+                  className={`border-b border-gray-800/50 hover:bg-gray-800/30 ${i % 2 === 0 ? '' : 'bg-gray-900/50'} cursor-pointer ${isLive ? 'bg-red-950/10' : ''}`}
+                  onClick={() => setDetailBet(bet)}
+                >
+                  <td className="px-3 py-2 text-gray-400">{bet.date}</td>
+                  <td className={`px-3 py-2 font-medium ${SPORT_COLORS[bet.sport] || 'text-gray-300'}`}>{bet.sport}</td>
+                  <td className="px-3 py-2 text-gray-200 max-w-[220px]">
+                    <div className="truncate">{bet.description}</div>
+                    {game && (
+                      <LiveGameInfo game={game} playerStat={playerStat} compact={true} />
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-gray-300">{bet.odds}</td>
+                  <td className="px-3 py-2 text-gray-300">${bet.stake}</td>
+                  <td className="px-3 py-2 text-gray-300">{(bet.trueProb * 100).toFixed(0)}%</td>
+                  <td className={`px-3 py-2 font-medium ${bet.edge >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {bet.edge >= 0 ? '+' : ''}{bet.edge.toFixed(1)}%
+                  </td>
+                  <td className="px-3 py-2">
+                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${RESULT_COLORS[bet.result]}`}>
+                      {bet.result}
+                    </span>
+                  </td>
+                  <td className={`px-3 py-2 font-bold ${bet.pnl > 0 ? 'text-green-400' : bet.pnl < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                    {bet.pnl > 0 ? '+' : ''}{bet.pnl !== 0 ? `$${bet.pnl.toFixed(2)}` : '—'}
+                  </td>
+                  <td className="px-3 py-2 text-gray-400">{bet.strategy}</td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
         )}
