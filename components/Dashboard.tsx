@@ -1,6 +1,5 @@
 'use client'
-
-import { DashboardData } from '@/types'
+import { DashboardData } from '../types'
 import Header from './Header'
 import BankrollChart from './BankrollChart'
 import StrategyTable from './StrategyTable'

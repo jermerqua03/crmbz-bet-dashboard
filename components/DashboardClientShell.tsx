@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
-import Dashboard from './Dashboard'
-import { DashboardData } from '@/types'
+import Dashboard from '../components/Dashboard'
+import { DashboardData } from '../types'
 
 export default function DashboardClientShell() {
   const [data, setData] = useState<DashboardData | null>(null)

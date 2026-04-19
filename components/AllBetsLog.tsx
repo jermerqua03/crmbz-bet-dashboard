@@ -1,7 +1,6 @@
 'use client'
-
 import { useState } from 'react'
-import { Bet } from '@/types'
+import { Bet } from '../types'
 
 const RESULT_COLORS = {
   WIN: 'text-green-400 bg-green-400/10',
@@ -33,7 +32,6 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
   })
 
   function liveStatus(bet: Bet) {
-    // If game is PENDING and date is today, mark as LIVE
     const today = new Date().toISOString().slice(0,10)
     return bet.result === 'PENDING' && bet.date === today
       ? <span className="ml-2 px-2 py-0.5 text-xs rounded bg-blue-600 text-white animate-pulse">LIVE</span>
