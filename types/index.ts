@@ -10,6 +10,9 @@ export interface Bet {
   result: 'WIN' | 'LOSS' | 'PENDING'
   pnl: number
   strategy: string
+  notes?: string
+  model?: string
+  reasoning?: string
 }
 
 export interface StrategyPerformance {
