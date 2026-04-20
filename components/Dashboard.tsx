@@ -15,7 +15,7 @@ export default function Dashboard({ data }: { data: DashboardData }) {
         <StatsRow data={data} />
         <BankrollChart data={data.bankrollHistory} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <TodaysBets bets={data.todaysBets} />
+          <TodaysBets bets={data.bets} />
           <StrategyTable strategies={data.strategies} />
         </div>
         <AllBetsLog bets={data.bets} />

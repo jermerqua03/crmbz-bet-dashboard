@@ -50,18 +50,19 @@ function useLiveGames(sports: string[]) {
 
 export default function TodaysBets({ bets }: { bets: Bet[] }) {
   const today = new Date().toISOString().split('T')[0]
-  const todayBets = bets.filter((b) => b.date === today).length > 0
-    ? bets.filter((b) => b.date === today)
-    : bets.slice(-3)
+  // Always source from the full bets array filtered by today — single source of truth
+  const todayBets = bets
+    .filter((b) => b.date === today)
+    .sort((a, b) => a.id.localeCompare(b.id))
 
-  // Collect unique sports from pending bets for targeted fetching
-  const pendingSports = useMemo(() =>
-    Array.from(new Set(todayBets.filter(b => b.result === 'PENDING').map(b => b.sport))),
+  // Fetch live game data for all of today's sports (not just pending — covers ESPN-resolved games too)
+  const todaySports = useMemo(() =>
+    Array.from(new Set(todayBets.map(b => b.sport))),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [todayBets.map(b => `${b.id}${b.result}`).join()]
+    [todayBets.map(b => b.id).join()]
   )
 
-  const liveGames = useLiveGames(pendingSports)
+  const liveGames = useLiveGames(todaySports)
 
   return (
     <div className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-4">
@@ -79,14 +80,14 @@ export default function TodaysBets({ bets }: { bets: Bet[] }) {
       ) : (
         <div className="space-y-3">
           {todayBets.map((bet) => {
-            const { game, playerStat, resolvedResult, resolvedPnl } = bet.result === 'PENDING'
-              ? matchBetToGame(bet.description, liveGames, bet.stake, bet.odds)
-              : { game: null, playerStat: null, resolvedResult: null, resolvedPnl: null }
+            // Always try to match — covers PENDING bets and bets where JSON hasn't been updated yet
+            const { game, playerStat, resolvedResult, resolvedPnl } =
+              matchBetToGame(bet.description, liveGames, bet.stake, bet.odds)
 
-            // Use resolved data when game is FINAL, otherwise fall back to JSON
+            // Prefer ESPN-resolved result over JSON when available (handles stale PENDING in JSON)
             const displayResult = resolvedResult ?? bet.result
             const displayPnl = resolvedPnl ?? bet.pnl
-            const isFinalResolved = !!resolvedResult
+            const isFinalResolved = !!resolvedResult && bet.result === 'PENDING'
 
             return (
               <div

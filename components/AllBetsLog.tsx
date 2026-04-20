@@ -47,10 +47,10 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
   const [detailBet, setDetailBet] = useState<Bet | null>(null)
 
   const today = new Date().toISOString().slice(0, 10)
-  const todayPendingSports = Array.from(new Set(
-    bets.filter(b => b.result === 'PENDING' && b.date === today).map(b => b.sport)
+  const todaySports = Array.from(new Set(
+    bets.filter(b => b.date === today).map(b => b.sport)
   ))
-  const liveGames = useLiveGames(todayPendingSports)
+  const liveGames = useLiveGames(todaySports)
 
   const sports = ['ALL', ...Array.from(new Set(bets.map(b => b.sport)))]
   const strategies = ['ALL', ...Array.from(new Set(bets.map(b => b.strategy)))]
@@ -107,7 +107,7 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
           <tbody>
             {filtered.map((bet, i) => {
               const isToday = bet.date === today
-              const { game, playerStat, resolvedResult, resolvedPnl } = (bet.result === 'PENDING' && isToday)
+              const { game, playerStat, resolvedResult, resolvedPnl } = isToday
                 ? matchBetToGame(bet.description, liveGames, bet.stake, bet.odds)
                 : { game: null, playerStat: null, resolvedResult: null, resolvedPnl: null }
 
