@@ -53,17 +53,22 @@ export function matchBetToGame(
   const empty: LiveMatchResult = { game: null, playerStat: null, playerStats: [], resolvedResult: null, resolvedPnl: null }
   if (!games.length) return empty
 
-  // ── Parlay: split into legs and collect all stats ─────────────────────────
+  // ── Parlay: split into legs, collect stats, resolve each leg ─────────────
   const isParlay = /\bparlay\b/i.test(description) || (description.includes(' + ') && !parsePropBet(description))
   if (isParlay) {
     const cleaned = description.replace(/\s*\bparlay\b\s*/i, ' ').trim()
     const legs = cleaned.split(/\s+\+\s+/)
     const collectedStats: PlayerStatResult[] = []
+    const legResults: ('WIN' | 'LOSS' | 'UNKNOWN')[] = []
     let matchedGame: ESPNGame | null = null
 
     for (const leg of legs) {
-      const legParse = parsePropBet(leg.trim())
+      const legTrimmed = leg.trim()
+      const legParse = parsePropBet(legTrimmed)
+
       if (legParse) {
+        // Prop leg
+        let found = false
         for (const game of games) {
           const player = findPlayer(legParse.playerName, game.playerStats)
           if (player) {
@@ -75,18 +80,49 @@ export function matchBetToGame(
                 ? (current >= legParse.target ? 'hitting' : 'missing')
                 : (current <= legParse.target ? 'hitting' : 'missing')
               collectedStats.push({ label: legParse.statLabel, current, target: legParse.target, direction: legParse.direction, pace })
+              legResults.push(game.status === 'post' ? (pace === 'hitting' ? 'WIN' : 'LOSS') : 'UNKNOWN')
+            } else {
+              legResults.push('UNKNOWN')
             }
+            found = true
             break
           }
+        }
+        if (!found) legResults.push('UNKNOWN')
+      } else {
+        // Team / ML leg
+        const teamGame = findGameByTeam(legTrimmed, games)
+        if (teamGame) {
+          if (!matchedGame) matchedGame = teamGame
+          if (teamGame.status === 'post') {
+            const outcome = resolveTeamOutcome(legTrimmed, teamGame)
+            legResults.push(outcome ?? 'UNKNOWN')
+          } else {
+            legResults.push('UNKNOWN')
+          }
+        } else {
+          legResults.push('UNKNOWN')
         }
       }
     }
 
-    // Also match game by team if not found via player
+    // Also match game by team if still not found
     if (!matchedGame) matchedGame = findGameByTeam(description, games)
 
+    // Parlay wins only if every leg wins; any LOSS = LOSS; any UNKNOWN = still pending
+    let resolvedResult: 'WIN' | 'LOSS' | null = null
+    let resolvedPnl: number | null = null
+    if (legResults.length > 0 && legResults.every(r => r === 'WIN')) {
+      resolvedResult = 'WIN'
+    } else if (legResults.some(r => r === 'LOSS')) {
+      resolvedResult = 'LOSS'
+    }
+    if (resolvedResult && stake != null && oddsStr != null) {
+      resolvedPnl = calcPnl(resolvedResult, stake, oddsStr)
+    }
+
     const primaryStat = collectedStats[0] ?? null
-    return { game: matchedGame, playerStat: primaryStat, playerStats: collectedStats, resolvedResult: null, resolvedPnl: null }
+    return { game: matchedGame, playerStat: primaryStat, playerStats: collectedStats, resolvedResult, resolvedPnl }
   }
 
   // ── Single prop bet ────────────────────────────────────────────────────────
