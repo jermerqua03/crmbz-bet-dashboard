@@ -53,6 +53,7 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
   const [sportFilter, setSportFilter] = useState('ALL')
   const [resultFilter, setResultFilter] = useState('ALL')
   const [strategyFilter, setStrategyFilter] = useState('ALL')
+  const [sortMode, setSortMode] = useState<'nearest' | 'furthest' | 'live'>('nearest')
   const [detailBet, setDetailBet] = useState<Bet | null>(null)
 
   const today = localDateString()
@@ -80,14 +81,10 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bets, liveGames])
 
-  // Sort purely by proximity of game date to today (nearest first).
-  // Ties at same distance: future/today before past. No live-game promotion.
   const todayMs = new Date(today).getTime()
-  function sortKey(bet: Bet): [number, number] {
+  function proximityKey(bet: Bet): [number, number] {
     const dayDiff = Math.round((new Date(bet.date).getTime() - todayMs) / 86400000)
-    const absDiff = Math.abs(dayDiff)
-    const futureFirst = dayDiff >= 0 ? 0 : 1
-    return [absDiff, futureFirst]
+    return [Math.abs(dayDiff), dayDiff >= 0 ? 0 : 1]
   }
 
   const filtered = bets
@@ -98,9 +95,19 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
       return true
     })
     .sort((a, b) => {
-      const [aAbs, aFut] = sortKey(a)
-      const [bAbs, bFut] = sortKey(b)
-      return aAbs - bAbs || aFut - bFut
+      if (sortMode === 'live') {
+        const aLive = matchResults.get(a.id)?.game?.status === 'in' ? 0 : 1
+        const bLive = matchResults.get(b.id)?.game?.status === 'in' ? 0 : 1
+        if (aLive !== bLive) return aLive - bLive
+        // secondary: nearest first within non-live
+        const [aAbs, aFut] = proximityKey(a)
+        const [bAbs, bFut] = proximityKey(b)
+        return aAbs - bAbs || aFut - bFut
+      }
+      const [aAbs, aFut] = proximityKey(a)
+      const [bAbs, bFut] = proximityKey(b)
+      const proxCmp = aAbs - bAbs || aFut - bFut
+      return sortMode === 'furthest' ? -proxCmp : proxCmp
     })
 
   return (
@@ -108,6 +115,15 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
       <div className="px-4 py-3 border-b border-gray-800 flex flex-wrap gap-3 items-center justify-between">
         <h2 className="text-sm font-bold text-gray-300 uppercase tracking-wider">All Bets Log</h2>
         <div className="flex gap-2 flex-wrap">
+          <select
+            className="bg-gray-800 border border-gray-700 text-gray-300 text-xs rounded px-2 py-1"
+            value={sortMode}
+            onChange={e => setSortMode(e.target.value as typeof sortMode)}
+          >
+            <option value="nearest">Nearest first</option>
+            <option value="furthest">Furthest first</option>
+            <option value="live">Live first</option>
+          </select>
           <select
             className="bg-gray-800 border border-gray-700 text-gray-300 text-xs rounded px-2 py-1"
             value={sportFilter}
