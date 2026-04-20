@@ -18,6 +18,45 @@
   ],
   "todaysBets": [
     {
+      "id": "101",
+      "date": "2026-04-19",
+      "sport": "NBA",
+      "description": "Jokic Over 10.5 Reb",
+      "odds": "-150",
+      "stake": 20,
+      "trueProb": 0.84,
+      "edge": 12,
+      "result": "PENDING",
+      "pnl": 0,
+      "strategy": "High Probability"
+    },
+    {
+      "id": "102",
+      "date": "2026-04-19",
+      "sport": "NBA",
+      "description": "Nuggets WIN",
+      "odds": "-240",
+      "stake": 20,
+      "trueProb": 0.85,
+      "edge": 14,
+      "result": "PENDING",
+      "pnl": 0,
+      "strategy": "High Probability"
+    },
+    {
+      "id": "103",
+      "date": "2026-04-19",
+      "sport": "MLB",
+      "description": "Mets ML",
+      "odds": "+112",
+      "stake": 20,
+      "trueProb": 0.74,
+      "edge": 22,
+      "result": "PENDING",
+      "pnl": 0,
+      "strategy": "Value Hunting"
+    },
+    {
       "id": "201",
       "date": "2026-04-19",
       "sport": "NBA",
@@ -61,6 +100,45 @@
     }
   ],
   "bets": [
+    {
+      "id": "101",
+      "date": "2026-04-19",
+      "sport": "NBA",
+      "description": "Jokic Over 10.5 Reb",
+      "odds": "-150",
+      "stake": 20,
+      "trueProb": 0.84,
+      "edge": 12,
+      "result": "PENDING",
+      "pnl": 0,
+      "strategy": "High Probability"
+    },
+    {
+      "id": "102",
+      "date": "2026-04-19",
+      "sport": "NBA",
+      "description": "Nuggets WIN",
+      "odds": "-240",
+      "stake": 20,
+      "trueProb": 0.85,
+      "edge": 14,
+      "result": "PENDING",
+      "pnl": 0,
+      "strategy": "High Probability"
+    },
+    {
+      "id": "103",
+      "date": "2026-04-19",
+      "sport": "MLB",
+      "description": "Mets ML",
+      "odds": "+112",
+      "stake": 20,
+      "trueProb": 0.74,
+      "edge": 22,
+      "result": "PENDING",
+      "pnl": 0,
+      "strategy": "Value Hunting"
+    },
     {
       "id": "201",
       "date": "2026-04-19",
