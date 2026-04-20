@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Bet } from '../types'
 import { ESPNGame } from '../lib/espn'
 import { matchBetToGame } from '../lib/matchBet'
@@ -23,33 +23,7 @@ function localDateString() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-function useLiveGames(sports: string[], betDates: string[]) {
-  const [games, setGames] = useState<ESPNGame[]>([])
-  const key = sports.join(',') + '|' + betDates.join(',')
-  const keyRef = useRef(key)
-  keyRef.current = key
-
-  useEffect(() => {
-    if (!sports.length) return
-    const fetch_ = async () => {
-      const [sportsStr, datesStr] = keyRef.current.split('|')
-      try {
-        const params = new URLSearchParams({ sports: sportsStr })
-        if (datesStr) params.set('dates', datesStr)
-        const res = await fetch(`/api/live-games?${params}`)
-        if (res.ok) setGames(await res.json())
-      } catch { /* ignore */ }
-    }
-    fetch_()
-    const id = setInterval(fetch_, 30_000)
-    return () => clearInterval(id)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key])
-
-  return games
-}
-
-export default function AllBetsLog({ bets }: { bets: Bet[] }) {
+export default function AllBetsLog({ bets, liveGames }: { bets: Bet[]; liveGames: ESPNGame[] }) {
   const [sportFilter, setSportFilter] = useState('ALL')
   const [resultFilter, setResultFilter] = useState('ALL')
   const [strategyFilter, setStrategyFilter] = useState('ALL')
@@ -57,13 +31,6 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
   const [detailBet, setDetailBet] = useState<Bet | null>(null)
 
   const today = localDateString()
-  const todaySports = Array.from(new Set(
-    bets.filter(b => b.date === today).map(b => b.sport)
-  ))
-  const todayBetDates = Array.from(new Set(
-    bets.filter(b => b.date === today).map(b => b.date)
-  ))
-  const liveGames = useLiveGames(todaySports, todayBetDates)
 
   const sports = ['ALL', ...Array.from(new Set(bets.map(b => b.sport)))]
   const strategies = ['ALL', ...Array.from(new Set(bets.map(b => b.strategy)))]

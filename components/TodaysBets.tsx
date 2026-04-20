@@ -1,5 +1,4 @@
 'use client'
-import { useEffect, useMemo, useRef, useState } from 'react'
 import { Bet } from '@/types'
 import { ESPNGame } from '@/lib/espn'
 import { matchBetToGame } from '@/lib/matchBet'
@@ -24,60 +23,16 @@ function PnlCell({ result, pnl }: { result: Bet['result']; pnl: number }) {
   return <span className="text-red-400 tabular-nums font-bold">-${Math.abs(pnl).toFixed(2)}</span>
 }
 
-// Use local date (not UTC) so dates match bet dates even after midnight UTC
 function localDateString() {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-function useLiveGames(sports: string[], betDates: string[]) {
-  const [games, setGames] = useState<ESPNGame[]>([])
-  const key = sports.join(',') + '|' + betDates.join(',')
-  const keyRef = useRef(key)
-  keyRef.current = key
-
-  useEffect(() => {
-    if (!sports.length) return
-
-    async function fetch_() {
-      const [sportsStr, datesStr] = keyRef.current.split('|')
-      try {
-        const params = new URLSearchParams({ sports: sportsStr })
-        if (datesStr) params.set('dates', datesStr)
-        const res = await fetch(`/api/live-games?${params}`)
-        if (res.ok) setGames(await res.json())
-      } catch { /* ignore */ }
-    }
-
-    fetch_()
-    const id = setInterval(fetch_, 30_000)
-    return () => clearInterval(id)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key])
-
-  return games
-}
-
-export default function TodaysBets({ bets }: { bets: Bet[] }) {
-  const today = localDateString()  // local date, not UTC
+export default function TodaysBets({ bets, liveGames }: { bets: Bet[]; liveGames: ESPNGame[] }) {
+  const today = localDateString()
   const todayBets = bets
     .filter((b) => b.date === today)
     .sort((a, b) => a.id.localeCompare(b.id))
-
-  const todaySports = useMemo(() =>
-    Array.from(new Set(todayBets.map(b => b.sport))),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [todayBets.map(b => b.id).join()]
-  )
-
-  // Pass explicit bet dates so ESPN fetches the right day even when server is in UTC
-  const betDates = useMemo(() =>
-    Array.from(new Set(todayBets.map(b => b.date))),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [todayBets.map(b => b.id).join()]
-  )
-
-  const liveGames = useLiveGames(todaySports, betDates)
 
   return (
     <div className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-4">
@@ -95,11 +50,9 @@ export default function TodaysBets({ bets }: { bets: Bet[] }) {
       ) : (
         <div className="space-y-3">
           {todayBets.map((bet) => {
-            // Always try to match — covers PENDING bets and bets where JSON hasn't been updated yet
             const { game, playerStat, playerStats, resolvedResult, resolvedPnl } =
               matchBetToGame(bet.description, liveGames, bet.stake, bet.odds)
 
-            // Prefer ESPN-resolved result over JSON when available (handles stale PENDING in JSON)
             const displayResult = resolvedResult ?? bet.result
             const displayPnl = resolvedPnl ?? bet.pnl
             const isFinalResolved = !!resolvedResult && bet.result === 'PENDING'
