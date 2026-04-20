@@ -80,13 +80,21 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bets, liveGames])
 
-  // Sort: LIVE → today upcoming → future (date asc) → final/past (date desc)
-  function sortKey(bet: Bet): [number, string] {
+  // Sort by temporal proximity to now:
+  //   0 = LIVE (happening now)
+  //   1 = today completed (just finished)
+  //   2 = today upcoming/pending
+  //   3 = future dates (nearest first)
+  //   4 = past dates from prior days (most recent first)
+  function sortKey(bet: Bet): [number, number, string] {
     const { game } = matchResults.get(bet.id) || {}
-    if (game?.status === 'in') return [0, bet.date]                          // LIVE
-    if (game?.status === 'pre') return [1, bet.date]                         // upcoming game matched
-    if (bet.date >= today && bet.result === 'PENDING') return [2, bet.date]  // future/today PENDING
-    return [3, bet.date]                                                      // completed / past
+    const isToday = bet.date === today
+    if (game?.status === 'in') return [0, 0, bet.date]            // LIVE
+    if (isToday && game?.status === 'post') return [1, 0, bet.date]  // today finished
+    if (isToday && bet.result !== 'PENDING') return [1, 0, bet.date] // today resolved (JSON)
+    if (isToday) return [2, 0, bet.date]                           // today upcoming
+    if (bet.date > today) return [3, 0, bet.date]                  // future (asc)
+    return [4, 0, bet.date]                                        // past days (desc)
   }
 
   const filtered = bets
@@ -97,11 +105,11 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
       return true
     })
     .sort((a, b) => {
-      const [aOrder, aDate] = sortKey(a)
-      const [bOrder, bDate] = sortKey(b)
+      const [aOrder, , aDate] = sortKey(a)
+      const [bOrder, , bDate] = sortKey(b)
       if (aOrder !== bOrder) return aOrder - bOrder
-      // Within completed bets: newest first; within upcoming: nearest first
-      return aOrder === 3
+      // Past days: most recent first; everything else: nearest date first
+      return aOrder === 4
         ? bDate.localeCompare(aDate)
         : aDate.localeCompare(bDate)
     })
