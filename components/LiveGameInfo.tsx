@@ -12,10 +12,13 @@ interface PlayerStatProps {
 interface Props {
   game: ESPNGame
   playerStat?: PlayerStatProps | null
+  playerStats?: PlayerStatProps[]
   compact?: boolean  // true = AllBetsLog inline, false = TodaysBets expanded
 }
 
-export default function LiveGameInfo({ game, playerStat, compact = false }: Props) {
+export default function LiveGameInfo({ game, playerStat, playerStats, compact = false }: Props) {
+  // Use playerStats array if provided, otherwise fall back to single playerStat
+  const stats = playerStats && playerStats.length > 0 ? playerStats : (playerStat ? [playerStat] : [])
   const isLive = game.status === 'in'
   const isFinal = game.status === 'post'
 
@@ -40,18 +43,18 @@ export default function LiveGameInfo({ game, playerStat, compact = false }: Prop
         {isLive && game.statusDetail && (
           <span className="text-[9px] text-gray-500">{game.statusDetail}</span>
         )}
-        {playerStat && (
-          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-            playerStat.pace === 'hitting'
+        {stats.map((s, i) => (
+          <span key={i} className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+            s.pace === 'hitting'
               ? 'bg-green-900/60 text-green-400'
               : 'bg-gray-800 text-gray-400'
           }`}>
-            {playerStat.label} {playerStat.current}
+            {s.label} {s.current}
             <span className="text-gray-500 ml-0.5">
-              / {playerStat.direction === 'over' ? `${playerStat.target}+` : `u${playerStat.target}`}
+              / {s.direction === 'over' ? `${s.target}+` : `u${s.target}`}
             </span>
           </span>
-        )}
+        ))}
       </div>
     )
   }
@@ -91,26 +94,22 @@ export default function LiveGameInfo({ game, playerStat, compact = false }: Prop
         )}
       </div>
 
-      {playerStat && (
-        <div className={`mt-1.5 flex items-center gap-2 text-[11px] font-mono font-bold ${
-          playerStat.pace === 'hitting' ? 'text-green-400' : 'text-gray-300'
+      {stats.map((s, i) => (
+        <div key={i} className={`mt-1.5 flex items-center gap-2 text-[11px] font-mono font-bold ${
+          s.pace === 'hitting' ? 'text-green-400' : 'text-gray-300'
         }`}>
-          <span>
-            {playerStat.label}: {playerStat.current}
-          </span>
+          <span>{s.label}: {s.current}</span>
           <span className="text-gray-500 font-normal">
-            {playerStat.direction === 'over'
-              ? `need >${playerStat.target}`
-              : `need <${playerStat.target}`}
+            {s.direction === 'over' ? `need >${s.target}` : `need <${s.target}`}
           </span>
-          {playerStat.pace === 'hitting' && isLive && (
+          {s.pace === 'hitting' && isLive && (
             <span className="text-green-500 text-[9px] font-normal">✓ on pace</span>
           )}
-          {playerStat.pace === 'missing' && isLive && (
+          {s.pace === 'missing' && isLive && (
             <span className="text-red-400 text-[9px] font-normal">✗ needs more</span>
           )}
         </div>
-      )}
+      ))}
 
       {!playerStat && !isLive && !isFinal && (
         <div className="mt-0.5 text-[10px] text-gray-600">{game.statusDetail}</div>

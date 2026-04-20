@@ -96,7 +96,7 @@ export default function TodaysBets({ bets }: { bets: Bet[] }) {
         <div className="space-y-3">
           {todayBets.map((bet) => {
             // Always try to match — covers PENDING bets and bets where JSON hasn't been updated yet
-            const { game, playerStat, resolvedResult, resolvedPnl } =
+            const { game, playerStat, playerStats, resolvedResult, resolvedPnl } =
               matchBetToGame(bet.description, liveGames, bet.stake, bet.odds)
 
             // Prefer ESPN-resolved result over JSON when available (handles stale PENDING in JSON)
@@ -161,6 +161,7 @@ export default function TodaysBets({ bets }: { bets: Bet[] }) {
                   <LiveGameInfo
                     game={game}
                     playerStat={playerStat}
+                    playerStats={playerStats}
                     compact={false}
                   />
                 )}

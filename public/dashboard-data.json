@@ -19,7 +19,7 @@
   "todaysBets": [
     {
       "id": "101",
-      "date": "2026-04-19",
+      "date": "2026-04-20",
       "sport": "NBA",
       "description": "Jokic Over 10.5 Reb",
       "odds": "-150",
@@ -32,7 +32,7 @@
     },
     {
       "id": "102",
-      "date": "2026-04-19",
+      "date": "2026-04-20",
       "sport": "NBA",
       "description": "Nuggets WIN",
       "odds": "-240",
@@ -103,7 +103,7 @@
   "bets": [
     {
       "id": "101",
-      "date": "2026-04-19",
+      "date": "2026-04-20",
       "sport": "NBA",
       "description": "Jokic Over 10.5 Reb",
       "odds": "-150",
@@ -116,7 +116,7 @@
     },
     {
       "id": "102",
-      "date": "2026-04-19",
+      "date": "2026-04-20",
       "sport": "NBA",
       "description": "Nuggets WIN",
       "odds": "-240",

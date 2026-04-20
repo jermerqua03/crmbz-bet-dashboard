@@ -119,9 +119,9 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
           <tbody>
             {filtered.map((bet, i) => {
               const isToday = bet.date === today
-              const { game, playerStat, resolvedResult, resolvedPnl } = isToday
+              const { game, playerStat, playerStats, resolvedResult, resolvedPnl } = isToday
                 ? matchBetToGame(bet.description, liveGames, bet.stake, bet.odds)
-                : { game: null, playerStat: null, resolvedResult: null, resolvedPnl: null }
+                : { game: null, playerStat: null, playerStats: [], resolvedResult: null, resolvedPnl: null }
 
               const displayResult = resolvedResult ?? bet.result
               const displayPnl = resolvedPnl ?? bet.pnl
@@ -147,13 +147,13 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
                         {isLive && game.statusDetail && (
                           <span className="text-[9px] text-gray-600">{game.statusDetail}</span>
                         )}
-                        {playerStat && (
-                          <span className={`text-[9px] font-bold px-1 rounded ${
-                            playerStat.pace === 'hitting' ? 'bg-green-900/50 text-green-400' : 'bg-gray-800 text-gray-400'
+                        {(playerStats.length > 0 ? playerStats : playerStat ? [playerStat] : []).map((s, i) => (
+                          <span key={i} className={`text-[9px] font-bold px-1 rounded ${
+                            s.pace === 'hitting' ? 'bg-green-900/50 text-green-400' : 'bg-gray-800 text-gray-400'
                           }`}>
-                            {playerStat.label} {playerStat.current}/{playerStat.direction === 'over' ? `${playerStat.target}+` : `u${playerStat.target}`}
+                            {s.label} {s.current}/{s.direction === 'over' ? `${s.target}+` : `u${s.target}`}
                           </span>
-                        )}
+                        ))}
                       </div>
                     )}
                   </td>

@@ -27,15 +27,18 @@ const SKIP_WORDS = new Set([
   '+', '-', 'game', 'total',
 ])
 
+export interface PlayerStatResult {
+  label: string
+  current: number
+  target: number
+  direction: 'over' | 'under'
+  pace: 'hitting' | 'missing' | 'unknown'
+}
+
 export interface LiveMatchResult {
   game: ESPNGame | null
-  playerStat: {
-    label: string
-    current: number
-    target: number
-    direction: 'over' | 'under'
-    pace: 'hitting' | 'missing' | 'unknown'
-  } | null
+  playerStat: PlayerStatResult | null   // first/primary stat (backward compat)
+  playerStats: PlayerStatResult[]       // all stats (parlays have multiple)
   // Non-null only when game.status === 'post' — auto-resolved from ESPN data
   resolvedResult: 'WIN' | 'LOSS' | null
   resolvedPnl: number | null
@@ -47,10 +50,46 @@ export function matchBetToGame(
   stake?: number,
   oddsStr?: string,
 ): LiveMatchResult {
-  const empty: LiveMatchResult = { game: null, playerStat: null, resolvedResult: null, resolvedPnl: null }
+  const empty: LiveMatchResult = { game: null, playerStat: null, playerStats: [], resolvedResult: null, resolvedPnl: null }
   if (!games.length) return empty
 
-  // Try player prop match first (more specific)
+  // ── Parlay: split into legs and collect all stats ─────────────────────────
+  const isParlay = /\bparlay\b/i.test(description) || (description.includes(' + ') && !parsePropBet(description))
+  if (isParlay) {
+    const cleaned = description.replace(/\s*\bparlay\b\s*/i, ' ').trim()
+    const legs = cleaned.split(/\s+\+\s+/)
+    const collectedStats: PlayerStatResult[] = []
+    let matchedGame: ESPNGame | null = null
+
+    for (const leg of legs) {
+      const legParse = parsePropBet(leg.trim())
+      if (legParse) {
+        for (const game of games) {
+          const player = findPlayer(legParse.playerName, game.playerStats)
+          if (player) {
+            if (!matchedGame) matchedGame = game
+            const rawVal = player.stats[legParse.statKey] ?? player.stats[legParse.statKey.toLowerCase()]
+            const current = rawVal ? parseFloat(rawVal) : NaN
+            if (!isNaN(current)) {
+              const pace: PlayerStatResult['pace'] = legParse.direction === 'over'
+                ? (current >= legParse.target ? 'hitting' : 'missing')
+                : (current <= legParse.target ? 'hitting' : 'missing')
+              collectedStats.push({ label: legParse.statLabel, current, target: legParse.target, direction: legParse.direction, pace })
+            }
+            break
+          }
+        }
+      }
+    }
+
+    // Also match game by team if not found via player
+    if (!matchedGame) matchedGame = findGameByTeam(description, games)
+
+    const primaryStat = collectedStats[0] ?? null
+    return { game: matchedGame, playerStat: primaryStat, playerStats: collectedStats, resolvedResult: null, resolvedPnl: null }
+  }
+
+  // ── Single prop bet ────────────────────────────────────────────────────────
   const propParse = parsePropBet(description)
   if (propParse) {
     const { playerName, direction, target, statKey, statLabel } = propParse
@@ -59,10 +98,10 @@ export function matchBetToGame(
       if (player) {
         const rawVal = player.stats[statKey] ?? player.stats[statKey.toLowerCase()]
         const current = rawVal ? parseFloat(rawVal) : NaN
-        const pace = isNaN(current) ? 'unknown' as const
+        const pace: PlayerStatResult['pace'] = isNaN(current) ? 'unknown'
           : direction === 'over'
-            ? (current >= target ? 'hitting' as const : 'missing' as const)
-            : (current <= target ? 'hitting' as const : 'missing' as const)
+            ? (current >= target ? 'hitting' : 'missing')
+            : (current <= target ? 'hitting' : 'missing')
 
         let resolvedResult: 'WIN' | 'LOSS' | null = null
         let resolvedPnl: number | null = null
@@ -71,17 +110,13 @@ export function matchBetToGame(
           if (stake != null && oddsStr != null) resolvedPnl = calcPnl(resolvedResult, stake, oddsStr)
         }
 
-        return {
-          game,
-          playerStat: isNaN(current) ? null : { label: statLabel, current, target, direction, pace },
-          resolvedResult,
-          resolvedPnl,
-        }
+        const stat = isNaN(current) ? null : { label: statLabel, current, target, direction, pace }
+        return { game, playerStat: stat, playerStats: stat ? [stat] : [], resolvedResult, resolvedPnl }
       }
     }
   }
 
-  // Fall back to team name match (ML, spread, game-winner)
+  // ── Team ML / game winner ──────────────────────────────────────────────────
   const teamGame = findGameByTeam(description, games)
   if (!teamGame) return empty
 
@@ -94,7 +129,7 @@ export function matchBetToGame(
     }
   }
 
-  return { game: teamGame, playerStat: null, resolvedResult, resolvedPnl }
+  return { game: teamGame, playerStat: null, playerStats: [], resolvedResult, resolvedPnl }
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -139,22 +174,30 @@ interface PropParse {
 }
 
 function parsePropBet(description: string): PropParse | null {
-  // "[Player Name] Over/Under X.X [StatType]"
+  // "[Player Name] Over/Under X.X [StatType]"  (statType is optional)
   const m = description.match(
-    /^(.+?)\s+(over|under|o|u)\s+([\d.]+)\s+(.+)$/i
+    /^(.+?)\s+(over|under|o|u)\s+([\d.]+)(?:\s+(.+))?$/i
   )
   if (!m) return null
 
-  const [, playerPart, dirWord, threshStr, statPart] = m
+  const [, playerPart, dirWord, threshStr, rawStatPart = ''] = m
   const direction: 'over' | 'under' = dirWord.toLowerCase().startsWith('o') ? 'over' : 'under'
   const target = parseFloat(threshStr)
   if (isNaN(target)) return null
 
-  // Resolve stat
+  // Strip noise words that aren't stat descriptions
+  const statPart = rawStatPart.replace(/\bparlay\b/gi, '').trim()
+
+  // Resolve stat from keyword
   for (const [pattern, key, label] of STAT_PATTERNS) {
     if (pattern.test(statPart)) {
       return { playerName: playerPart.trim(), direction, target, statKey: key, statLabel: label }
     }
+  }
+
+  // No stat keyword found — default to points (most common NBA prop)
+  if (!statPart) {
+    return { playerName: playerPart.trim(), direction, target, statKey: 'pts', statLabel: 'PTS' }
   }
 
   return null
