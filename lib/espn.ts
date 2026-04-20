@@ -96,6 +96,37 @@ async function fetchScoreboard(sport: string, dateStr?: string): Promise<ESPNGam
   return games
 }
 
+// ESPN uses verbose key names — map them to the short codes matchBet.ts looks up
+const ESPN_KEY_ALIASES: Record<string, string> = {
+  'points': 'pts',
+  'rebounds': 'reb',
+  'assists': 'ast',
+  'steals': 'stl',
+  'blocks': 'blk',
+  'turnovers': 'to',
+  'offensiverebounds': 'oreb',
+  'defensiverebounds': 'dreb',
+  'fouls': 'pf',
+  'minutes': 'min',
+  // MLB
+  'strikeouts': 'so',
+  'homeruns': 'hr',
+  'runs': 'r',
+  'hits': 'h',
+  'rbis': 'rbi',
+  'walks': 'bb',
+  // NHL
+  'goals': 'g',
+  'plusminus': '+/-',
+}
+
+// For compound "made-attempted" keys, extract the made count
+const ESPN_COMPOUND_KEYS: Record<string, string> = {
+  'threepointfieldgoalsmade-threepointfieldgoalsattempted': '3pm',
+  'fieldgoalsmade-fieldgoalsattempted': 'fgm',
+  'freethrowsmade-freethrowsattempted': 'ftm',
+}
+
 async function fetchBoxScoreStats(path: string, eventId: string): Promise<ESPNPlayerStat[]> {
   const res = await fetch(
     `https://site.api.espn.com/apis/site/v2/sports/${path}/summary?event=${eventId}`,
@@ -108,14 +139,27 @@ async function fetchBoxScoreStats(path: string, eventId: string): Promise<ESPNPl
 
   for (const teamSection of data.boxscore?.players || []) {
     for (const statGroup of teamSection.statistics || []) {
-      const keys: string[] = (statGroup.keys || []).map((k: string) => k.toLowerCase())
+      const rawKeys: string[] = statGroup.keys || []
       for (const entry of statGroup.athletes || []) {
         const athlete = entry.athlete
         if (!athlete) continue
 
         const statRecord: Record<string, string> = {}
         ;(entry.stats || []).forEach((val: string, i: number) => {
-          if (keys[i]) statRecord[keys[i]] = val
+          const rawKey = rawKeys[i]
+          if (!rawKey) return
+
+          const k = rawKey.toLowerCase()
+          // Store under the original lowercase key
+          statRecord[k] = val
+
+          // Store under short alias if one exists
+          const alias = ESPN_KEY_ALIASES[k]
+          if (alias) statRecord[alias] = val
+
+          // For compound "made-attempted" keys, store the made number separately
+          const compoundAlias = ESPN_COMPOUND_KEYS[k]
+          if (compoundAlias) statRecord[compoundAlias] = val.split('-')[0] || '0'
         })
 
         players.push({
