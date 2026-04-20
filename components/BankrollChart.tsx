@@ -51,7 +51,7 @@ export default function BankrollChart({ data }: { data: BankrollDataPoint[] }) {
     <div className="bg-[#0d0d1a] border border-[#1a1a2e] rounded-lg p-4">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-[10px] font-bold tracking-[0.3em] uppercase text-[#4b5563]">
-          Bankroll History — 14 Day Challenge
+          Bankroll History
         </h2>
         <div className="flex items-center gap-3 text-[10px] text-[#4b5563]">
           <span className="flex items-center gap-1">
