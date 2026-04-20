@@ -16,8 +16,8 @@ function getGradientOffset(data: BankrollDataPoint[]) {
   const values = data.map((d) => d.bankroll)
   const max = Math.max(...values)
   const min = Math.min(...values)
-  if (max <= 1000) return 1
-  if (min >= 1000) return 0
+  if (max <= 1000) return 0
+  if (min >= 1000) return 1
   return (max - 1000) / (max - min)
 }
 
