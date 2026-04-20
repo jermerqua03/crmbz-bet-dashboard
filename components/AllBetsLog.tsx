@@ -81,15 +81,13 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
   }, [bets, liveGames])
 
   // Sort purely by proximity of game date to today (nearest first).
-  // Ties (same |dayDiff|): future/today before past. Within same date: LIVE first.
+  // Ties at same distance: future/today before past. No live-game promotion.
   const todayMs = new Date(today).getTime()
-  function sortKey(bet: Bet): [number, number, number] {
-    const { game } = matchResults.get(bet.id) || {}
+  function sortKey(bet: Bet): [number, number] {
     const dayDiff = Math.round((new Date(bet.date).getTime() - todayMs) / 86400000)
     const absDiff = Math.abs(dayDiff)
-    const futureFirst = dayDiff >= 0 ? 0 : 1   // future/today (0) before past (1) at same distance
-    const liveFirst = game?.status === 'in' ? 0 : 1
-    return [absDiff, futureFirst, liveFirst]
+    const futureFirst = dayDiff >= 0 ? 0 : 1
+    return [absDiff, futureFirst]
   }
 
   const filtered = bets
@@ -100,9 +98,9 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
       return true
     })
     .sort((a, b) => {
-      const [aAbs, aFut, aLive] = sortKey(a)
-      const [bAbs, bFut, bLive] = sortKey(b)
-      return aAbs - bAbs || aFut - bFut || aLive - bLive
+      const [aAbs, aFut] = sortKey(a)
+      const [bAbs, bFut] = sortKey(b)
+      return aAbs - bAbs || aFut - bFut
     })
 
   return (
