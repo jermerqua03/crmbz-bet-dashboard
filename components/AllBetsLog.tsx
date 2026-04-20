@@ -80,21 +80,16 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bets, liveGames])
 
-  // Sort by temporal proximity to now:
-  //   0 = LIVE (happening now)
-  //   1 = today completed (just finished)
-  //   2 = today upcoming/pending
-  //   3 = future dates (nearest first)
-  //   4 = past dates from prior days (most recent first)
-  function sortKey(bet: Bet): [number, number, string] {
+  // Sort purely by proximity of game date to today (nearest first).
+  // Ties (same |dayDiff|): future/today before past. Within same date: LIVE first.
+  const todayMs = new Date(today).getTime()
+  function sortKey(bet: Bet): [number, number, number] {
     const { game } = matchResults.get(bet.id) || {}
-    const isToday = bet.date === today
-    if (game?.status === 'in') return [0, 0, bet.date]            // LIVE
-    if (isToday && game?.status === 'post') return [1, 0, bet.date]  // today finished
-    if (isToday && bet.result !== 'PENDING') return [1, 0, bet.date] // today resolved (JSON)
-    if (isToday) return [2, 0, bet.date]                           // today upcoming
-    if (bet.date > today) return [3, 0, bet.date]                  // future (asc)
-    return [4, 0, bet.date]                                        // past days (desc)
+    const dayDiff = Math.round((new Date(bet.date).getTime() - todayMs) / 86400000)
+    const absDiff = Math.abs(dayDiff)
+    const futureFirst = dayDiff >= 0 ? 0 : 1   // future/today (0) before past (1) at same distance
+    const liveFirst = game?.status === 'in' ? 0 : 1
+    return [absDiff, futureFirst, liveFirst]
   }
 
   const filtered = bets
@@ -105,13 +100,9 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
       return true
     })
     .sort((a, b) => {
-      const [aOrder, , aDate] = sortKey(a)
-      const [bOrder, , bDate] = sortKey(b)
-      if (aOrder !== bOrder) return aOrder - bOrder
-      // Past days: most recent first; everything else: nearest date first
-      return aOrder === 4
-        ? bDate.localeCompare(aDate)
-        : aDate.localeCompare(bDate)
+      const [aAbs, aFut, aLive] = sortKey(a)
+      const [bAbs, bFut, bLive] = sortKey(b)
+      return aAbs - bAbs || aFut - bFut || aLive - bLive
     })
 
   return (
