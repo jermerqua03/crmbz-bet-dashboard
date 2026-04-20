@@ -65,6 +65,16 @@ export default function Dashboard({ data }: { data: DashboardData }) {
     [data.bets, liveGames, data.startingBankroll]
   )
 
+  // Patch today's bankroll history entry with the live-computed value
+  const computedBankrollHistory = useMemo(() => {
+    const history = [...data.bankrollHistory]
+    const todayEntry = { date: today, bankroll: liveStats.currentBankroll }
+    const idx = history.findIndex(h => h.date === today)
+    if (idx >= 0) history[idx] = todayEntry
+    else history.push(todayEntry)
+    return history
+  }, [data.bankrollHistory, today, liveStats.currentBankroll])
+
   // Merge live stats back into the data shape so child components get accurate numbers
   const computedData: DashboardData = useMemo(() => ({
     ...data,
@@ -75,14 +85,15 @@ export default function Dashboard({ data }: { data: DashboardData }) {
     roi:             liveStats.roi,
     currentBankroll: liveStats.currentBankroll,
     strategies:      liveStats.strategies,
-  }), [data, liveStats])
+    bankrollHistory: computedBankrollHistory,
+  }), [data, liveStats, computedBankrollHistory])
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 font-mono">
       <Header data={computedData} />
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <StatsRow data={computedData} />
-        <BankrollChart data={data.bankrollHistory} />
+        <BankrollChart data={computedData.bankrollHistory} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <TodaysBets bets={data.bets} liveGames={liveGames} />
           <StrategyTable strategies={computedData.strategies} />
