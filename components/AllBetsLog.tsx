@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Bet } from '../types'
 import { ESPNGame } from '../lib/espn'
 import { matchBetToGame } from '../lib/matchBet'
@@ -67,6 +67,28 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
   const sports = ['ALL', ...Array.from(new Set(bets.map(b => b.sport)))]
   const strategies = ['ALL', ...Array.from(new Set(bets.map(b => b.strategy)))]
 
+  // Precompute match results once (used for sort AND render)
+  const matchResults = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof matchBetToGame>>()
+    for (const bet of bets) {
+      map.set(bet.id, bet.date === today
+        ? matchBetToGame(bet.description, liveGames, bet.stake, bet.odds)
+        : { game: null, playerStat: null, playerStats: [], resolvedResult: null, resolvedPnl: null }
+      )
+    }
+    return map
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bets, liveGames])
+
+  // Sort: LIVE → today upcoming → future (date asc) → final/past (date desc)
+  function sortKey(bet: Bet): [number, string] {
+    const { game } = matchResults.get(bet.id) || {}
+    if (game?.status === 'in') return [0, bet.date]                          // LIVE
+    if (game?.status === 'pre') return [1, bet.date]                         // upcoming game matched
+    if (bet.date >= today && bet.result === 'PENDING') return [2, bet.date]  // future/today PENDING
+    return [3, bet.date]                                                      // completed / past
+  }
+
   const filtered = bets
     .filter(b => {
       if (sportFilter !== 'ALL' && b.sport !== sportFilter) return false
@@ -74,7 +96,15 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
       if (strategyFilter !== 'ALL' && b.strategy !== strategyFilter) return false
       return true
     })
-    .sort((a, b) => b.date.localeCompare(a.date))
+    .sort((a, b) => {
+      const [aOrder, aDate] = sortKey(a)
+      const [bOrder, bDate] = sortKey(b)
+      if (aOrder !== bOrder) return aOrder - bOrder
+      // Within completed bets: newest first; within upcoming: nearest first
+      return aOrder === 3
+        ? bDate.localeCompare(aDate)
+        : aDate.localeCompare(bDate)
+    })
 
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
@@ -118,10 +148,8 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
           </thead>
           <tbody>
             {filtered.map((bet, i) => {
-              const isToday = bet.date === today
-              const { game, playerStat, playerStats, resolvedResult, resolvedPnl } = isToday
-                ? matchBetToGame(bet.description, liveGames, bet.stake, bet.odds)
-                : { game: null, playerStat: null, playerStats: [], resolvedResult: null, resolvedPnl: null }
+              const { game, playerStat, playerStats, resolvedResult, resolvedPnl } =
+                matchResults.get(bet.id) || { game: null, playerStat: null, playerStats: [], resolvedResult: null, resolvedPnl: null }
 
               const displayResult = resolvedResult ?? bet.result
               const displayPnl = resolvedPnl ?? bet.pnl

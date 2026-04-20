@@ -205,16 +205,25 @@ function parsePropBet(description: string): PropParse | null {
 
 function findPlayer(name: string, playerStats: ESPNGame['playerStats']) {
   const needle = name.toLowerCase()
-  // Try exact last-name match first, then broader substring
+  // 1. Exact last-name or full-name match
   for (const p of playerStats) {
     const full = p.fullName.toLowerCase()
     const lastName = full.split(' ').pop() || ''
     if (lastName === needle || full === needle) return p
   }
+  // 2. Substring match
   for (const p of playerStats) {
     const full = p.fullName.toLowerCase()
     const short = p.name.toLowerCase()
     if (full.includes(needle) || short.includes(needle) || needle.includes(full.split(' ').pop() || '~~~')) return p
+  }
+  // 3. 4-char prefix match — handles nicknames (e.g. "Wemby" → "Wembanyama")
+  if (needle.length >= 4) {
+    const prefix = needle.substring(0, 4)
+    for (const p of playerStats) {
+      const lastName = (p.fullName.toLowerCase().split(' ').pop() || '')
+      if (lastName.startsWith(prefix)) return p
+    }
   }
   return null
 }
