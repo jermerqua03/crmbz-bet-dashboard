@@ -1,19 +1,20 @@
 {
-  "currentBankroll": 980,
+  "currentBankroll": 1083,
   "startingBankroll": 1000,
-  "netProfit": -20,
-  "roi": -2,
-  "wins": 0,
+  "netProfit": 83,
+  "roi": 8.3,
+  "wins": 3,
   "losses": 1,
-  "winRate": 0,
-  "daysRemaining": 13,
+  "winRate": 75,
+  "daysRemaining": 12,
   "bankrollHistory": [
     { "date": "2026-04-18", "bankroll": 1000 },
-    { "date": "2026-04-19", "bankroll": 980 }
+    { "date": "2026-04-19", "bankroll": 1060 },
+    { "date": "2026-04-20", "bankroll": 1083 }
   ],
   "strategies": [
-    { "strategy": "High Probability", "bets": 2, "winRate": 0, "wagered": 40, "pnl": 0, "roi": 0 },
-    { "strategy": "Value Hunting", "bets": 2, "winRate": 0, "wagered": 35, "pnl": -20, "roi": -57.14 },
+    { "strategy": "High Probability", "bets": 3, "winRate": 100, "wagered": 65, "pnl": 83, "roi": 127.7 },
+    { "strategy": "Value Hunting", "bets": 2, "winRate": 50, "wagered": 35, "pnl": 0, "roi": 0 },
     { "strategy": "Parlay", "bets": 1, "winRate": 0, "wagered": 10, "pnl": 0, "roi": 0 }
   ],
   "todaysBets": [
@@ -42,62 +43,6 @@
       "result": "PENDING",
       "pnl": 0,
       "strategy": "High Probability"
-    },
-    {
-      "id": "103",
-      "date": "2026-04-19",
-      "sport": "MLB",
-      "description": "Mets ML",
-      "odds": "+112",
-      "stake": 20,
-      "trueProb": 0.74,
-      "edge": 22,
-      "result": "LOSS",
-      "pnl": -20,
-      "strategy": "Value Hunting",
-      "notes": "Cubs 2, Mets 1. Final."
-    },
-    {
-      "id": "201",
-      "date": "2026-04-19",
-      "sport": "NBA",
-      "description": "Spurs WIN",
-      "odds": "-570",
-      "stake": 25,
-      "trueProb": 0.91,
-      "edge": 5.9,
-      "result": "PENDING",
-      "pnl": 0,
-      "strategy": "High Probability",
-      "notes": "Spurs are an elite home squad and the market is pricing their win rate slightly too low given Portland’s depleted lineup. All models (ESPN BPI, numberFire, Polymarket) true win rate 90%+. Injury report clean for core Spurs; Blazers missing key guards. Perfect 'no drawdown' T1 bet."
-    },
-    {
-      "id": "202",
-      "date": "2026-04-19",
-      "sport": "NBA",
-      "description": "Wembanyama Over 27.5 Points",
-      "odds": "-115",
-      "stake": 15,
-      "trueProb": 0.76,
-      "edge": 22.5,
-      "result": "PENDING",
-      "pnl": 0,
-      "strategy": "Value Hunting",
-      "notes": "Wemby averages 35.5 pts last 5 games, fresh legs, playoff debut, usage spike. Portland has no rim protection, and Wemby's matchup edge is extreme. Model consensus: Over hits 76%. All verification checks passed."
-    },
-    {
-      "id": "203",
-      "date": "2026-04-19",
-      "sport": "NBA",
-      "description": "Spurs ML + Wemby Over 27.5 Parlay",
-      "odds": "+110",
-      "stake": 10,
-      "trueProb": 0.69,
-      "edge": 14.9,
-      "result": "PENDING",
-      "pnl": 0,
-      "strategy": "Parlay",
-      "notes": "Combining two of the strongest edges in the game. Both legs have model agreement and low correlation risk, Spurs have incentive to sweep quickly, Wemby should be focal point—parlay pays ~2.1x, true hit rate ~69%."
     }
   ],
   "bets": [
@@ -150,10 +95,10 @@
       "stake": 25,
       "trueProb": 0.91,
       "edge": 5.9,
-      "result": "PENDING",
-      "pnl": 0,
+      "result": "WIN",
+      "pnl": 45,
       "strategy": "High Probability",
-      "notes": "Spurs are an elite home squad and the market is pricing their win rate slightly too low given Portland’s depleted lineup. All models (ESPN BPI, numberFire, Polymarket) true win rate 90%+. Injury report clean for core Spurs; Blazers missing key guards. Perfect 'no drawdown' T1 bet."
+      "notes": "Spurs 118, Blazers 91. Wemby: 33 pts, 13 reb, 4 blk. Blazers overwhelmed after halftime; Spurs led wire to wire."
     },
     {
       "id": "202",
@@ -164,10 +109,10 @@
       "stake": 15,
       "trueProb": 0.76,
       "edge": 22.5,
-      "result": "PENDING",
-      "pnl": 0,
+      "result": "WIN",
+      "pnl": 13,
       "strategy": "Value Hunting",
-      "notes": "Wemby averages 35.5 pts last 5 games, fresh legs, playoff debut, usage spike. Portland has no rim protection, and Wemby's matchup edge is extreme. Model consensus: Over hits 76%. All verification checks passed."
+      "notes": "Wembanyama scored 33 (17 by halftime) for easy cover."
     },
     {
       "id": "203",
@@ -178,10 +123,10 @@
       "stake": 10,
       "trueProb": 0.69,
       "edge": 14.9,
-      "result": "PENDING",
-      "pnl": 0,
+      "result": "WIN",
+      "pnl": 11,
       "strategy": "Parlay",
-      "notes": "Combining two of the strongest edges in the game. Both legs have model agreement and low correlation risk, Spurs have incentive to sweep quickly, Wemby should be focal point—parlay pays ~2.1x, true hit rate ~69%."
+      "notes": "Both legs hit: Spurs win by 27, Wemby covers by 5+. Payout: $21; Net: +$11."
     }
   ]
 }
