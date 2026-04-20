@@ -55,12 +55,14 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
   const sports = ['ALL', ...Array.from(new Set(bets.map(b => b.sport)))]
   const strategies = ['ALL', ...Array.from(new Set(bets.map(b => b.strategy)))]
 
-  const filtered = bets.filter(b => {
-    if (sportFilter !== 'ALL' && b.sport !== sportFilter) return false
-    if (resultFilter !== 'ALL' && b.result !== resultFilter) return false
-    if (strategyFilter !== 'ALL' && b.strategy !== strategyFilter) return false
-    return true
-  })
+  const filtered = bets
+    .filter(b => {
+      if (sportFilter !== 'ALL' && b.sport !== sportFilter) return false
+      if (resultFilter !== 'ALL' && b.result !== resultFilter) return false
+      if (strategyFilter !== 'ALL' && b.strategy !== strategyFilter) return false
+      return true
+    })
+    .sort((a, b) => b.date.localeCompare(a.date))
 
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
@@ -118,12 +120,29 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
                   className={`border-b border-gray-800/50 hover:bg-gray-800/30 ${i % 2 === 0 ? '' : 'bg-gray-900/50'} cursor-pointer ${isLive ? 'bg-red-950/10' : ''}`}
                   onClick={() => setDetailBet(bet)}
                 >
-                  <td className="px-3 py-2 text-gray-400">{bet.date}</td>
+                  <td className="px-3 py-2 text-gray-400 whitespace-nowrap">{bet.date}</td>
                   <td className={`px-3 py-2 font-medium ${SPORT_COLORS[bet.sport] || 'text-gray-300'}`}>{bet.sport}</td>
                   <td className="px-3 py-2 text-gray-200 max-w-[220px]">
                     <div className="truncate">{bet.description}</div>
+                    {/* Score + player stat inline — no LIVE badge here, it lives in Result column */}
                     {game && (
-                      <LiveGameInfo game={game} playerStat={playerStat} compact={true} />
+                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                        <span className="text-[10px] font-mono text-gray-400">
+                          {game.awayAbbr} <b className="text-gray-200">{game.awayScore}</b>
+                          {' — '}
+                          {game.homeAbbr} <b className="text-gray-200">{game.homeScore}</b>
+                        </span>
+                        {isLive && game.statusDetail && (
+                          <span className="text-[9px] text-gray-600">{game.statusDetail}</span>
+                        )}
+                        {playerStat && (
+                          <span className={`text-[9px] font-bold px-1 rounded ${
+                            playerStat.pace === 'hitting' ? 'bg-green-900/50 text-green-400' : 'bg-gray-800 text-gray-400'
+                          }`}>
+                            {playerStat.label} {playerStat.current}/{playerStat.direction === 'over' ? `${playerStat.target}+` : `u${playerStat.target}`}
+                          </span>
+                        )}
+                      </div>
                     )}
                   </td>
                   <td className="px-3 py-2 text-gray-300">{bet.odds}</td>
@@ -133,9 +152,16 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
                     {bet.edge >= 0 ? '+' : ''}{bet.edge.toFixed(1)}%
                   </td>
                   <td className="px-3 py-2">
-                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${RESULT_COLORS[displayResult]}`}>
-                      {displayResult}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      {isLive && (
+                        <span className="px-1.5 py-0.5 bg-red-600 text-white rounded text-[9px] font-bold tracking-widest animate-pulse w-fit">
+                          LIVE
+                        </span>
+                      )}
+                      <span className={`px-2 py-0.5 rounded text-xs font-bold w-fit ${RESULT_COLORS[displayResult]}`}>
+                        {displayResult}
+                      </span>
+                    </div>
                   </td>
                   <td className={`px-3 py-2 font-bold ${displayPnl > 0 ? 'text-green-400' : displayPnl < 0 ? 'text-red-400' : 'text-gray-400'}`}>
                     {displayPnl > 0 ? '+' : ''}{displayPnl !== 0 ? `$${Math.abs(displayPnl).toFixed(2)}` : '—'}
