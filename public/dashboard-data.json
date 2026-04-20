@@ -1,19 +1,19 @@
 {
-  "currentBankroll": 1000,
+  "currentBankroll": 980,
   "startingBankroll": 1000,
-  "netProfit": 0,
-  "roi": 0,
+  "netProfit": -20,
+  "roi": -2,
   "wins": 0,
-  "losses": 0,
+  "losses": 1,
   "winRate": 0,
   "daysRemaining": 13,
   "bankrollHistory": [
     { "date": "2026-04-18", "bankroll": 1000 },
-    { "date": "2026-04-19", "bankroll": 1000 }
+    { "date": "2026-04-19", "bankroll": 980 }
   ],
   "strategies": [
     { "strategy": "High Probability", "bets": 2, "winRate": 0, "wagered": 40, "pnl": 0, "roi": 0 },
-    { "strategy": "Value Hunting", "bets": 1, "winRate": 0, "wagered": 20, "pnl": 0, "roi": 0 },
+    { "strategy": "Value Hunting", "bets": 2, "winRate": 0, "wagered": 35, "pnl": -20, "roi": -57.14 },
     { "strategy": "Parlay", "bets": 1, "winRate": 0, "wagered": 10, "pnl": 0, "roi": 0 }
   ],
   "todaysBets": [
@@ -52,9 +52,10 @@
       "stake": 20,
       "trueProb": 0.74,
       "edge": 22,
-      "result": "PENDING",
-      "pnl": 0,
-      "strategy": "Value Hunting"
+      "result": "LOSS",
+      "pnl": -20,
+      "strategy": "Value Hunting",
+      "notes": "Cubs 2, Mets 1. Final."
     },
     {
       "id": "201",
@@ -135,9 +136,10 @@
       "stake": 20,
       "trueProb": 0.74,
       "edge": 22,
-      "result": "PENDING",
-      "pnl": 0,
-      "strategy": "Value Hunting"
+      "result": "LOSS",
+      "pnl": -20,
+      "strategy": "Value Hunting",
+      "notes": "Cubs 2, Mets 1. Final."
     },
     {
       "id": "201",

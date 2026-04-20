@@ -18,24 +18,33 @@ const SPORT_COLORS: Record<string, string> = {
   NFL: 'text-yellow-400',
 }
 
-function useLiveGames(sports: string[]) {
+function localDateString() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function useLiveGames(sports: string[], betDates: string[]) {
   const [games, setGames] = useState<ESPNGame[]>([])
-  const sportsKey = sports.join(',')
-  const keyRef = useRef(sportsKey)
-  keyRef.current = sportsKey
+  const key = sports.join(',') + '|' + betDates.join(',')
+  const keyRef = useRef(key)
+  keyRef.current = key
 
   useEffect(() => {
-    if (!keyRef.current) return
+    if (!sports.length) return
     const fetch_ = async () => {
+      const [sportsStr, datesStr] = keyRef.current.split('|')
       try {
-        const res = await fetch(`/api/live-games?sports=${keyRef.current}`)
+        const params = new URLSearchParams({ sports: sportsStr })
+        if (datesStr) params.set('dates', datesStr)
+        const res = await fetch(`/api/live-games?${params}`)
         if (res.ok) setGames(await res.json())
       } catch { /* ignore */ }
     }
     fetch_()
     const id = setInterval(fetch_, 30_000)
     return () => clearInterval(id)
-  }, [sportsKey])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key])
 
   return games
 }
@@ -46,11 +55,14 @@ export default function AllBetsLog({ bets }: { bets: Bet[] }) {
   const [strategyFilter, setStrategyFilter] = useState('ALL')
   const [detailBet, setDetailBet] = useState<Bet | null>(null)
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = localDateString()
   const todaySports = Array.from(new Set(
     bets.filter(b => b.date === today).map(b => b.sport)
   ))
-  const liveGames = useLiveGames(todaySports)
+  const todayBetDates = Array.from(new Set(
+    bets.filter(b => b.date === today).map(b => b.date)
+  ))
+  const liveGames = useLiveGames(todaySports, todayBetDates)
 
   const sports = ['ALL', ...Array.from(new Set(bets.map(b => b.sport)))]
   const strategies = ['ALL', ...Array.from(new Set(bets.map(b => b.strategy)))]

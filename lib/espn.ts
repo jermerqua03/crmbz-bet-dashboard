@@ -27,19 +27,31 @@ export interface ESPNGame {
   playerStats: ESPNPlayerStat[]
 }
 
-export async function fetchLiveGamesForSports(sports: string[]): Promise<ESPNGame[]> {
-  const results = await Promise.allSettled(
-    sports.filter(s => SPORT_PATHS[s]).map(s => fetchScoreboard(s))
-  )
-  return results.flatMap(r => r.status === 'fulfilled' ? r.value : [])
+// dates: YYYY-MM-DD strings. If provided, fetches those specific days from ESPN.
+// Always also fetches "today" (UTC) to catch live games.
+export async function fetchLiveGamesForSports(sports: string[], dates?: string[]): Promise<ESPNGame[]> {
+  // Build unique ESPN date strings (YYYYMMDD). Always include today UTC + any provided dates.
+  const todayUtc = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+  const espnDates = Array.from(new Set([todayUtc, ...(dates || []).map(d => d.replace(/-/g, ''))]))
+
+  const fetches = sports
+    .filter(s => SPORT_PATHS[s])
+    .flatMap(s => espnDates.map(d => fetchScoreboard(s, d)))
+
+  const results = await Promise.allSettled(fetches)
+  // Dedupe by game id
+  const seen = new Set<string>()
+  return results
+    .flatMap(r => r.status === 'fulfilled' ? r.value : [])
+    .filter(g => seen.has(g.id) ? false : (seen.add(g.id), true))
 }
 
-async function fetchScoreboard(sport: string): Promise<ESPNGame[]> {
+async function fetchScoreboard(sport: string, dateStr?: string): Promise<ESPNGame[]> {
   const path = SPORT_PATHS[sport]
-  const res = await fetch(
-    `https://site.api.espn.com/apis/site/v2/sports/${path}/scoreboard`,
-    { cache: 'no-store' }
-  )
+  const url = dateStr
+    ? `https://site.api.espn.com/apis/site/v2/sports/${path}/scoreboard?dates=${dateStr}`
+    : `https://site.api.espn.com/apis/site/v2/sports/${path}/scoreboard`
+  const res = await fetch(url, { cache: 'no-store' })
   if (!res.ok) return []
 
   const data = await res.json()
