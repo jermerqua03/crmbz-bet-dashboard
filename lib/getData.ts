@@ -64,17 +64,25 @@ export async function getData(): Promise<DashboardData> {
         updatedAt: r.updatedAt.toISOString(),
       }))
 
-    const injuryReports: InjuryReport[] = injuryRows.map((i) => ({
-      id: i.id,
-      player: i.player,
-      team: i.team,
-      position: i.position,
-      status: i.status as InjuryReport['status'],
-      detail: i.detail,
-      propImpact: i.propImpact ?? undefined,
-      source: i.source ?? undefined,
-      updatedAt: i.updatedAt.toISOString(),
-    }))
+    const SEVERITY: Record<string, number> = { OUT: 0, IR: 1, DOUBTFUL: 2, QUESTIONABLE: 3, PROBABLE: 4, ACTIVE: 5 }
+    const injuryReports: InjuryReport[] = injuryRows
+      .map((i) => ({
+        id: i.id,
+        player: i.player,
+        team: i.team,
+        position: i.position,
+        status: i.status as InjuryReport['status'],
+        detail: i.detail,
+        propImpact: i.propImpact ?? undefined,
+        source: i.source ?? undefined,
+        updatedAt: i.updatedAt.toISOString(),
+      }))
+      // Most severe first, then most recent; cap the panel to a readable set.
+      .sort((a, b) =>
+        (SEVERITY[a.status] ?? 9) - (SEVERITY[b.status] ?? 9) ||
+        b.updatedAt.localeCompare(a.updatedAt),
+      )
+      .slice(0, 40)
 
     const bets: Bet[] = betRows.map((b) => ({
       id: b.id,
