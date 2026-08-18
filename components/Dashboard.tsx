@@ -9,6 +9,8 @@ import StrategyTable from './StrategyTable'
 import TodaysBets from './TodaysBets'
 import AllBetsLog from './AllBetsLog'
 import StatsRow from './StatsRow'
+import PropRecommendations from './PropRecommendations'
+import InjuryReportPanel from './InjuryReport'
 
 function localDateString() {
   const d = new Date()
@@ -88,10 +90,24 @@ export default function Dashboard({ data }: { data: DashboardData }) {
     bankrollHistory: computedBankrollHistory,
   }), [data, liveStats, computedBankrollHistory])
 
+  const recs = data.propRecommendations ?? []
+  const injuries = data.injuryReports ?? []
+
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 font-mono">
       <Header data={computedData} />
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+        {/* Primary: this week's recommended plays + injury intel */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <PropRecommendations recs={recs} week={data.currentWeek} />
+          </div>
+          <div className="lg:col-span-1">
+            <InjuryReportPanel reports={injuries} />
+          </div>
+        </div>
+
+        {/* Bankroll tracking — driven by the bets you place manually */}
         <StatsRow data={computedData} />
         <BankrollChart data={computedData.bankrollHistory} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
