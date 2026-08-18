@@ -1,0 +1,206 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- App config (singleton row, id = 1) ---
+model AppState {
+  id               Int      @id @default(1)
+  season           String
+  currentWeek      Int
+  startingBankroll Float    @default(1000)
+  updatedAt        DateTime @updatedAt
+}
+
+// --- Reference data ---
+model Team {
+  abbr       String  @id
+  name       String
+  conference String?
+  division   String?
+}
+
+model Player {
+  id       String  @id @default(cuid())
+  name     String
+  position String
+  teamAbbr String?
+  espnId   String? @unique
+
+  @@index([name])
+}
+
+model Game {
+  id       String  @id @default(cuid())
+  espnId   String? @unique
+  season   String
+  week     Int
+  gameDate String
+  kickoff  String?
+  homeAbbr String
+  awayAbbr String
+  status   String  @default("pre")
+
+  @@index([season, week])
+}
+
+// --- Ingested stats (feed the projection engine) ---
+model PlayerGameStat {
+  id        String   @id @default(cuid())
+  player    String
+  teamAbbr  String?
+  season    String
+  week      Int
+  marketKey String // e.g. "player_reception_yds"
+  value     Float
+  createdAt DateTime @default(now())
+
+  @@index([player, marketKey])
+  @@index([season, week])
+}
+
+model TeamDefenseStat {
+  id           String   @id @default(cuid())
+  teamAbbr     String
+  season       String
+  week         Int? // null = season-to-date aggregate
+  vsPosition   String // "WR" | "RB" | "QB" | "TE" | "ALL"
+  ptsAllowed   Float?
+  yardsAllowed Float?
+  rank         Int?
+  extra        Json?
+  updatedAt    DateTime @updatedAt
+
+  @@index([teamAbbr, season])
+}
+
+// --- Odds (timestamped history, with alt-line ladders) ---
+model PropLine {
+  id        String   @id @default(cuid())
+  week      Int
+  gameDate  String?
+  player    String
+  team      String?
+  opponent  String?
+  position  String?
+  market    String
+  marketKey String?
+  book      String   @default("fanduel")
+  side      String // OVER | UNDER (main line)
+  line      Float
+  odds      String
+  altLines  Json? // AltLine[]
+  fetchedAt DateTime @default(now())
+
+  @@index([week, player, marketKey])
+}
+
+// --- Model projections ---
+model Projection {
+  id        String   @id @default(cuid())
+  week      Int
+  player    String
+  market    String
+  marketKey String?
+  mean      Float
+  stdev     Float?
+  createdAt DateTime @default(now())
+
+  @@index([week, player, marketKey])
+}
+
+// --- The recommendations surfaced in the UI ---
+model Recommendation {
+  id         String   @id @default(cuid())
+  week       Int
+  gameDate   String?
+  kickoff    String?
+  player     String
+  team       String
+  opponent   String
+  position   String
+  market     String
+  marketKey  String?
+  side       String
+  line       Float
+  odds       String
+  projection Float
+  hitProb    Float
+  edge       Float
+  tier       Int
+  confidence String
+  matchup    String
+  reasoning  String?
+  altLines   Json? // AltLine[]
+  injuryFlag String?
+  updatedAt  DateTime @default(now())
+
+  @@index([week])
+}
+
+model Injury {
+  id         String   @id @default(cuid())
+  player     String
+  team       String
+  position   String
+  status     String
+  detail     String
+  propImpact String?
+  source     String?
+  updatedAt  DateTime @default(now())
+
+  @@index([team])
+}
+
+// --- The user's real bets (manual bankroll) ---
+model Bet {
+  id               String    @id @default(cuid())
+  date             String
+  player           String?
+  sport            String    @default("NFL")
+  description      String
+  market           String?
+  marketKey        String?
+  side             String?
+  line             Float?
+  odds             String
+  stake            Float
+  trueProb         Float     @default(0)
+  edge             Float     @default(0)
+  result           String    @default("PENDING") // WIN | LOSS | PUSH | PENDING
+  pnl              Float     @default(0)
+  strategy         String    @default("Manual")
+  notes            String?
+  recommendationId String?
+  placedAt         DateTime  @default(now())
+  gradedAt         DateTime?
+
+  @@index([date])
+}
+
+model BankrollPoint {
+  date     String @id
+  bankroll Float
+}
+
+// --- Season-long accuracy tracking (the tuning engine) ---
+model ModelResult {
+  id               String   @id @default(cuid())
+  week             Int
+  player           String
+  market           String
+  marketKey        String?
+  line             Float?
+  projected        Float
+  actual           Float?
+  hit              Boolean?
+  error            Float?
+  recommendationId String?
+  createdAt        DateTime @default(now())
+
+  @@index([week, marketKey])
+}
